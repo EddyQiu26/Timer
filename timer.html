@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Page Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://fonts.googleapis.com/css?family=Barlow&display=swap" rel="stylesheet">
+    <style>
+        *{
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;    
+            background: none;
+            border: none;   
+            outline: none;     
+        }
+        body {
+            width: 100vw;
+            height: 100vh;
+        }
+        #mainContainer {
+            width: 500px;
+            margin: auto;
+        }
+        #canvasContainer {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;;
+        }
+        canvas {
+            display: block;
+        }
+        #inputContainer{
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items:flex-end;
+        }
+        input {
+            border-top: 0;
+            border-left: 0;
+            border-right: 0;
+            max-width: 150px;
+            min-width: 100px;;
+            padding: 10px 5px;  
+            font-size: 2.5em;
+            border-bottom: 3px solid rgb(153, 153, 153);
+            transition: all 0.2s linear;
+            text-align: center;
+        }
+        #colon { 
+            font-size: 2.5em;
+            color: rgb(153,153,153)
+        }
+        input:focus, button:active, input::-moz-focusring {
+            border-top: 0;
+            border-left: 0;
+            border-right: 0;
+            border-bottom: 3px solid rgb(255, 77, 77);
+            transition: border 0.2s linear;
+            outline: none;
+        }
+        input:hover, button:hover {
+            cursor: pointer;
+            border-bottom: 3px solid rgb(255, 77, 77);
+            transition: border 0.2s linear;
+        }
+        button {
+            padding-bottom: 10px;
+            padding-top: 5px;
+            padding-left: 10px;
+            padding-right: 10px;
+            font-size: 1.35em;
+            border-bottom: 3px solid rgb(153,153,153);
+            color: rgba(153,153,153);
+            transition: color 0.2s linear;
+        }
+        button:hover {
+            color: black;
+            transition: color 0.2s linear
+        }
+        #tipContainer {
+            font-family: 'Barlow', sans-serif;
+        }
+        #tip { 
+            font-size: 1.0em;
+            margin-top: 10px;
+            margin-left: auto;
+            margin-right: auto;
+            width: 100%;
+            background: rgb(255, 77, 77);
+            color: white;
+            padding: 10px 5px;
+        }
+        .tips {
+            padding-top: 5x;
+            padding-bottom: 5px;
+            margin-left: 0px;
+            margin-top: 5px;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: baseline;
+            font-size: 18px;
+        }
+        #changeTimerBtn {
+            font-size: 1em;
+            width: 25%;
+            border: 1px solid rgb(153,153,153);
+            border-radius: 3px;
+            margin-top: 10px;
+            padding: 5px !important;
+            font-size: 15px !important;
+        }
+        #tipContainer p:nth-child(2) {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+        }
+        #changeTimerBtn:hover {
+            border: 1px solid rgb(255, 77, 77);
+        }
+        .specialNotes {
+            text-decoration: underline;
+        }
+        b:before {
+            content: " ";
+            display: inline-block;
+        }
+        b:after {
+            content: " ";
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div id='mainContainer'>
+        <div id='canvasContainer'>
+            <canvas id="canvas" width="500" height ="500"></canvas>
+        </div>
+        <div id='inputContainer'>
+            <input type="number" id='min-input' min="0" max='60'>
+            <span id='colon'>:</span>
+            <input type="number" id="sec-input" min="0" max="60">
+            <button id='start'>Start Timer</button>
+        </div>
+        <div id="tipContainer">
+            <p id='tip'>Tips: </p>
+            <p class='tips'>Use Predefine time - 60 seconds<button id='changeTimerBtn'>Prefefine Time</button></p>
+            <p class="tips">Click "Start Timer" to <b> enable </b> setting up time</p>
+            <p class='tips'>Hit <b> enter </b> or <b> click </b> the button to <b> start/reset the timer </b></p>
+            <p class='tips'>0 &le; minutes &le; 60, 0 &le; seconds &le; 60</p>
+        </div>
+    </div>    
+    <script>
+        const PRESET_TIME = 60;
+        let inDefaultTimeMode = false;
+        let minInput = document.getElementById("min-input");
+        let secInput = document.getElementById("sec-input");
+        let changeTimerBtn = document.getElementById("changeTimerBtn");
+        let minFromInput = 0;
+        let secFromInput = 0;
+        let canStart = true;
+        let canvas = document.getElementById("canvas");
+        let ctx = canvas.getContext("2d");  
+        ctx.font = '5.5em sans-serif'; 
+        let canvasWidth = canvas.width;
+        let canvasHeight = canvas.height;
+        let radius = canvasWidth * 0.4;
+        ctx.lineWidth = 10;    
+        let startTimer =document.getElementById('start');
+        let time = 0;
+        let animationID;
+        let startingAngle = 3/2 * Math.PI;
+        let endingAngle = -Math.PI / 2;
+        let countDown = "00:00";
+        ctx.fillText(countDown, canvasWidth/2 - (ctx.measureText(countDown).width / 2), canvasHeight/2);
+        ctx.arc(canvasWidth/2,canvasHeight/2, radius, startingAngle , endingAngle,true);
+        ctx.strokeStyle = "rgb(64, 64, 64)";
+        ctx.stroke();
+        function resetTimer(ctx){
+            ctx.clearRect(0,0,canvasWidth,canvasHeight);
+            countDown = "00:00";
+            ctx.beginPath();
+            ctx.arc(canvasWidth/2,canvasHeight/2, radius, 0 , 2*Math.PI,true);
+            ctx.strokeStyle = "rgb(64, 64, 64)";
+            ctx.stroke();
+            ctx.closePath();
+            if(!inDefaultTimeMode){
+                time = 0;
+            }
+            past = 0;
+            min = 0;
+            timeElapsed = 0;
+            remainingSeconds = 0;
+            speed = 0;
+            lastPerformed = 0;
+            nowPerforming = 0;
+            fps = 0;
+            startingAngle = 3/2 * Math.PI;
+            endingAngle = -Math.PI / 2;
+            canStart  = true;
+            ctx.fillText(countDown, canvasWidth/2 - (ctx.measureText(countDown).width / 2), canvasHeight/2);
+            cancelAnimationFrame(animationID);
+        }
+        function animation(){
+            resetTimer(ctx);
+            minFromInput = getMinFromInput();
+            secFromInput = getSecFromInput();
+            if(minFromInput > 60 || secFromInput < 0){
+                canStart = false;
+            }
+            if(!inDefaultTimeMode){
+                time = convertToSeconds(minFromInput) + secFromInput;
+            }
+            minInput.value = "";
+            secInput.value = "";
+            if(time > 0 && canStart){
+                let past = (new Date()).getTime();
+                let now;
+                let min = 0;
+                let timeElapsed = 0;
+                let remainingSeconds = time % 60;
+                let speed = ((360/time)*Math.PI) / 180;
+                let lastPerformed = performance.now();
+                let nowPerforming;
+                let fps = 0;
+                function animate(){
+                    ctx.beginPath();
+                    ctx.clearRect(0,0,canvasWidth,canvasHeight);
+                    nowPerforming = performance.now();
+                    fps = 1 / ((nowPerforming - lastPerformed)/1000);
+                    lastPerformed = nowPerforming;
+                    startingAngle = startingAngle - (speed/fps);
+                    ctx.arc(canvasWidth/2,canvasHeight/2, radius, startingAngle ,endingAngle,false);
+                    ctx.strokeStyle = "rgb(153, 153, 153)"
+                    ctx.stroke();
+                    ctx.closePath(); 
+                    ctx.beginPath();
+                    ctx.arc(canvasWidth/2,canvasHeight/2, radius, startingAngle , endingAngle,true);
+                    ctx.strokeStyle = "rgb(255, 77, 77)";
+                    now = (new Date()).getTime();
+                    timeElapsed = Math.floor( (past - now) / 1000 ) + (time+1);
+                    min = convertToMin(timeElapsed);
+                    remainingSeconds = timeElapsed % 60;
+                    if(min < 10){
+                        countDown = "0" + min + ":";
+                    } else {
+                        countDown = min + ":";
+                    }
+                    if(remainingSeconds < 10) {
+                        countDown = countDown + "0"+remainingSeconds;
+                    } else {
+                        countDown = countDown + remainingSeconds
+                    }
+                    if((startingAngle < endingAngle)){
+                        resetTimer(ctx);
+                    } else {
+                        animationID = requestAnimationFrame(animate);
+                        ctx.stroke();
+                    }
+                    ctx.fillText(countDown, canvasWidth/2 - (ctx.measureText(countDown).width / 2), canvasHeight/2);
+                }
+                animate();
+            }
+        }
+
+        function startTime(){
+            startTimer.addEventListener('click', ()=>{
+                inDefaultTimeMode = false;
+                if(!inDefaultTimeMode) {
+                    minInput.disabled = false;
+                    secInput.disabled = false;
+                    minInput.style.backgroundColor = "white";
+                    secInput.style.backgroundColor = "white";
+                    animation();
+                }
+            },false);
+            minInput.addEventListener("keydown", e => {
+                if(e.keyCode == 13){
+                    animation();
+                }
+            },false);
+            secInput.addEventListener("keydown", e => {
+                if(e.keyCode == 13){
+                    animation();
+                }
+            },false);
+        }    
+        function convertToMin(seconds){
+            return Math.floor(seconds / 60);
+        }
+        function convertToSeconds(minutes){
+            return (minutes * 60);
+        }
+        function getMinFromInput(){
+            if(minInput.value === "" ){
+                return 0;
+            } else {
+                return (parseInt(minInput.value));
+            }
+        }
+        function getSecFromInput(){
+            if(secInput.value === ""){
+                return 0;
+            } else {
+                return (parseInt(secInput.value));
+            }        
+        }
+        function adjustInput(){
+            minInput.addEventListener('input', () => {
+                adjustMin();
+            }, false);
+            secInput.addEventListener('input', () => {
+                let currentSecFromInput = getSecFromInput();
+                let overflow = 0;
+                if(currentSecFromInput >= 60 || (currentSecFromInput < 60 && currentSecFromInput > 0)){
+                    overflow = Math.floor(currentSecFromInput / 60);
+                    if(minInput.value == ""){
+                        minInput.value = overflow;
+                    } else {
+                        minInput.value = overflow + parseInt(minInput.value);
+                        adjustMin();
+                    }
+                    secInput.value = currentSecFromInput % 60;
+                } else if(currentSecFromInput < 0){
+                    secInput.style.color = "rgb(255, 77, 77)";
+                    let warningTimedout = setTimeout(function(){
+                        secInput.value = 0;
+                        secInput.style.color = "rgb(153,153,153)";
+                        clearTimeout(warningTimedout);
+                    }, 500);
+                    
+                }
+            },false);
+        }
+        function adjustMin(){
+            let currentMinFromInput = getMinFromInput();
+            if(currentMinFromInput > 60 || currentMinFromInput < 0){
+                minInput.style.color = "rgb(255, 77, 77)";
+                secInput.style.color = "rgb(255, 77, 77)";
+                let warningTimedout = setTimeout(function(){
+                    if(currentMinFromInput >= 60){
+                        minInput.value = 60;
+                        secInput.value = 0
+                    } else {
+                        minInput.value = 0;
+                    }
+                    minInput.style.color = "rgb(153,153,153)";
+                    secInput.style.color = "rgb(153,153,153)"
+                    clearTimeout(warningTimedout);
+                }, 500);
+            } 
+        }
+        function changeTimeSetting(){
+            changeTimerBtn.addEventListener('click', ()=>{
+                resetTimer(ctx);
+                time = PRESET_TIME;
+                inDefaultTimeMode = true;
+                minInput.disabled = true;
+                secInput.disabled = true;
+                minInput.style.backgroundColor = "rgb(153,153,153)"
+                secInput.style.backgroundColor = "rgb(153,153,153)"
+                animation();
+            })
+        }
+        adjustInput();
+        startTime();
+        changeTimeSetting()
+    </script>
+</body>
+</html>
